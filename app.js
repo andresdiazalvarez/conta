@@ -25,8 +25,10 @@ const quarters = [
   ["OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
 ];
 
-const invoiceEditableFields = ["units", "price", "otros", "irpf"];
-const invoiceCalculatedFields = ["total", "iva", "invoiceTotal"];
+const invoiceNumericEditableFields = ["units", "price", "otros", "aparte", "irpf"];
+const invoiceTextEditableFields = ["otrosText", "aparteText"];
+const invoiceEditableFields = [...invoiceNumericEditableFields, ...invoiceTextEditableFields];
+const invoiceCalculatedFields = ["total", "iva", "invoiceTotal", "invoiceTotalNoIrpf"];
 const expenseEditableFields = ["autonomos", "gasoil1", "gasoil2", "gasoil3", "gasoil4"];
 const expenseCalculatedFields = ["expense-iva", "expense-irpf", "expenses-total"];
 let selectedMonth = months[0];
@@ -103,10 +105,14 @@ function buildInvoiceForms() {
         ${invoiceField(index, "units", "UND.", false)}
         ${invoiceField(index, "price", "PRECIO AL DIA", false)}
         ${invoiceField(index, "otros", "OTROS", false)}
+        ${invoiceTextField(index, "otrosText", "DETALLE OTROS")}
         ${invoiceField(index, "total", "TOTAL", true)}
         ${invoiceField(index, "iva", "IVA", true)}
+        ${invoiceField(index, "aparte", "A PARTE", false)}
+        ${invoiceTextField(index, "aparteText", "DETALLE A PARTE")}
         ${invoiceField(index, "irpf", "IRPF", false)}
-        ${invoiceField(index, "invoiceTotal", "TOTAL FACTURA", true)}
+        ${invoiceField(index, "invoiceTotal", "TOTAL DE LA FACTURA DE ASESORIA", true)}
+        ${invoiceField(index, "invoiceTotalNoIrpf", "TOTAL FACTURA SIN IRPF", true)}
       </div>
     `;
     container.appendChild(section);
@@ -120,6 +126,16 @@ function invoiceField(index, key, label, readonly) {
     <div class="field">
       <label for="${id}">${label}</label>
       <input id="${id}" type="number" min="0" step="0.01" inputmode="decimal"${readonlyAttribute}>
+    </div>
+  `;
+}
+
+function invoiceTextField(index, key, label) {
+  const id = invoiceInputId(index, key);
+  return `
+    <div class="field">
+      <label for="${id}">${label}</label>
+      <input id="${id}" type="text">
     </div>
   `;
 }
@@ -159,10 +175,13 @@ function openMonth(month) {
 function fillMonthForm(record) {
   const normalized = normalizeRecord(record);
   normalized.invoices.forEach((invoice, index) => {
-    invoiceEditableFields.forEach((field) => {
+    invoiceNumericEditableFields.forEach((field) => {
       const value = numberValue(invoice[field]);
       const input = document.getElementById(invoiceInputId(index, field));
       input.value = shouldShowBlank(field, value) ? "" : value.toFixed(2);
+    });
+    invoiceTextEditableFields.forEach((field) => {
+      document.getElementById(invoiceInputId(index, field)).value = invoice[field] || "";
     });
   });
 
@@ -186,8 +205,11 @@ function readEditableRecord() {
 
   for (let index = 0; index < INVOICE_COUNT; index += 1) {
     const invoice = {};
-    invoiceEditableFields.forEach((field) => {
+    invoiceNumericEditableFields.forEach((field) => {
       invoice[field] = numberValue(document.getElementById(invoiceInputId(index, field)).value);
+    });
+    invoiceTextEditableFields.forEach((field) => {
+      invoice[field] = document.getElementById(invoiceInputId(index, field)).value.trim();
     });
     invoices.push(invoice);
   }
@@ -205,8 +227,10 @@ function calculateRecord(record) {
   const invoices = normalizeInvoices(record.invoices).map(calculateInvoice);
   const total = sum(invoices, "total");
   const iva = sum(invoices, "iva");
+  const aparte = sum(invoices, "aparte");
   const irpf = sum(invoices, "irpf");
   const invoiceTotal = sum(invoices, "invoiceTotal");
+  const invoiceTotalNoIrpf = sum(invoices, "invoiceTotalNoIrpf");
   const expenseIva = iva;
   const expenseIrpf = irpf;
   const expensesTotal = expenseIva + numberValue(record.autonomos) + expenseIrpf + numberValue(record.gasoil1) + numberValue(record.gasoil2) + numberValue(record.gasoil3) + numberValue(record.gasoil4);
@@ -216,8 +240,10 @@ function calculateRecord(record) {
     invoices,
     total,
     iva,
+    aparte,
     irpf,
     "invoice-total": invoiceTotal,
+    "invoice-total-no-irpf": invoiceTotalNoIrpf,
     "expense-iva": expenseIva,
     "expense-irpf": expenseIrpf,
     "expenses-total": expensesTotal,
@@ -229,19 +255,27 @@ function calculateInvoice(invoice) {
   const units = numberValue(invoice.units);
   const price = numberValue(invoice.price);
   const otros = numberValue(invoice.otros);
+  const otrosText = invoice.otrosText || "";
+  const aparte = numberValue(invoice.aparte);
+  const aparteText = invoice.aparteText || "";
   const irpf = numberValue(invoice.irpf);
   const total = units * price + otros;
   const iva = total * IVA_RATE;
-  const invoiceTotal = total + iva;
+  const invoiceTotalNoIrpf = total + iva + aparte;
+  const invoiceTotal = invoiceTotalNoIrpf - irpf;
 
   return {
     units,
     price,
     otros,
+    otrosText,
+    aparte,
+    aparteText,
     irpf,
     total,
     iva,
-    invoiceTotal
+    invoiceTotal,
+    invoiceTotalNoIrpf
   };
 }
 
@@ -332,8 +366,10 @@ function downloadYear() {
       "MES",
       "TOTAL",
       "IVA",
+      "A PARTE",
       "IRPF",
-      "TOTALES",
+      "TOTAL DE LA FACTURA DE ASESORIA",
+      "TOTAL FACTURA SIN IRPF",
       "AUTONOMOS",
       "GASOIL 1",
       "GASOIL 2",
@@ -348,7 +384,9 @@ function downloadYear() {
     total: 0,
     iva: 0,
     irpf: 0,
+    aparte: 0,
     invoiceTotal: 0,
+    invoiceTotalNoIrpf: 0,
     autonomos: 0,
     gasoil1: 0,
     gasoil2: 0,
@@ -364,8 +402,10 @@ function downloadYear() {
       month,
       decimal(record.total),
       decimal(record.iva),
+      decimal(record.aparte),
       decimal(record.irpf),
       decimal(record["invoice-total"]),
+      decimal(record["invoice-total-no-irpf"]),
       decimal(record.autonomos),
       decimal(record.gasoil1),
       decimal(record.gasoil2),
@@ -377,8 +417,10 @@ function downloadYear() {
 
     sums.total += numberValue(record.total);
     sums.iva += numberValue(record.iva);
+    sums.aparte += numberValue(record.aparte);
     sums.irpf += numberValue(record.irpf);
     sums.invoiceTotal += numberValue(record["invoice-total"]);
+    sums.invoiceTotalNoIrpf += numberValue(record["invoice-total-no-irpf"]);
     sums.autonomos += numberValue(record.autonomos);
     sums.gasoil1 += numberValue(record.gasoil1);
     sums.gasoil2 += numberValue(record.gasoil2);
@@ -392,8 +434,10 @@ function downloadYear() {
     "SUMA",
     decimal(sums.total),
     decimal(sums.iva),
+    decimal(sums.aparte),
     decimal(sums.irpf),
     decimal(sums.invoiceTotal),
+    decimal(sums.invoiceTotalNoIrpf),
     decimal(sums.autonomos),
     decimal(sums.gasoil1),
     decimal(sums.gasoil2),
@@ -407,7 +451,7 @@ function downloadYear() {
 }
 
 function buildQuarterRows(quarterMonths) {
-  const rows = [["MES", "TOTAL", "IVA", "TOTAL FACTURA", "GASTOS", "INGRESOS"]];
+  const rows = [["MES", "TOTAL", "IVA", "TOTAL DE LA FACTURA DE ASESORIA", "GASTOS", "INGRESOS"]];
   const sums = {
     total: 0,
     iva: 0,
@@ -476,6 +520,9 @@ function oldSingleInvoice(record) {
       units: numberValue(record.units),
       price: numberValue(record.price) || DEFAULT_DAILY_PRICE,
       otros: 0,
+      otrosText: "",
+      aparte: 0,
+      aparteText: "",
       irpf: numberValue(record.irpf)
     }
   ];
@@ -497,6 +544,9 @@ function defaultInvoice() {
     units: 0,
     price: DEFAULT_DAILY_PRICE,
     otros: 0,
+    otrosText: "",
+    aparte: 0,
+    aparteText: "",
     irpf: 0
   };
 }
