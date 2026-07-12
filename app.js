@@ -1,5 +1,6 @@
 const STORAGE_KEY = "contabilidad-mensual";
 const IVA_RATE = 0.21;
+const DEFAULT_DAILY_PRICE = 72.85;
 
 const months = [
   "ENERO",
@@ -85,9 +86,13 @@ function buildQuarterButtons() {
 }
 
 function bindInvoiceInputs() {
-  [...editableFields, ...calculatedFields].forEach((id) => {
+  editableFields.forEach((id) => {
     const input = document.getElementById(id);
-    input.value = "0.00";
+    input.value = "";
+  });
+
+  calculatedFields.forEach((id) => {
+    document.getElementById(id).value = "0.00";
   });
 
   editableFields.forEach((id) => {
@@ -100,14 +105,15 @@ function bindInvoiceInputs() {
 function openMonth(month) {
   selectedMonth = month;
   document.getElementById("selected-month").textContent = month;
-  fillInvoiceForm(records[month] || emptyRecord());
+  fillInvoiceForm(records[month] || defaultMonthRecord());
   updateCurrentMonth();
   showScreen("invoice-screen");
 }
 
 function fillInvoiceForm(record) {
   editableFields.forEach((id) => {
-    document.getElementById(id).value = numberValue(record[id]).toFixed(2);
+    const value = numberValue(record[id]);
+    document.getElementById(id).value = value === 0 ? "" : value.toFixed(2);
   });
 }
 
@@ -386,6 +392,13 @@ function emptyRecord() {
     record[id] = 0;
     return record;
   }, {});
+}
+
+function defaultMonthRecord() {
+  return {
+    ...emptyRecord(),
+    price: DEFAULT_DAILY_PRICE
+  };
 }
 
 function numberValue(value) {
