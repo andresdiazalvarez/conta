@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Contabilidad</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app">
+      <section id="home-screen" class="screen active" aria-labelledby="home-title">
+        <div class="center-panel">
+          <h1 id="home-title">Contabilidad</h1>
+          <button class="primary-button" data-screen="menu-screen">CONTABILIDAD</button>
+        </div>
+      </section>
+
+      <section id="menu-screen" class="screen" aria-labelledby="menu-title">
+        <div class="topbar">
+          <button class="ghost-button" data-screen="home-screen">Volver</button>
+        </div>
+        <div class="center-panel">
+          <h2 id="menu-title">Contabilidad</h2>
+          <div class="button-stack">
+            <button class="primary-button" data-screen="months-screen">CARGAR FACTURAS</button>
+            <button class="primary-button" data-screen="quarters-screen">TRIMESTRAL</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="months-screen" class="screen" aria-labelledby="months-title">
+        <div class="topbar">
+          <button class="ghost-button" data-screen="menu-screen">Volver</button>
+        </div>
+        <div class="content">
+          <h2 id="months-title">Cargar facturas</h2>
+          <div id="months-grid" class="month-grid"></div>
+        </div>
+      </section>
+
+      <section id="invoice-screen" class="screen" aria-labelledby="invoice-title">
+        <div class="topbar">
+          <button class="ghost-button" data-screen="months-screen">Volver</button>
+        </div>
+        <div class="content narrow">
+          <h2 id="invoice-title">FACTURA</h2>
+          <p id="selected-month" class="month-label"></p>
+
+          <section class="data-box" aria-label="Factura mensual">
+            <div class="field">
+              <label for="units">UND.</label>
+              <input id="units" type="number" min="0" step="0.01" inputmode="decimal">
+            </div>
+            <div class="field">
+              <label for="price">PRECIO AL DIA</label>
+              <input id="price" type="number" min="0" step="0.01" inputmode="decimal">
+            </div>
+            <div class="field">
+              <label for="total">TOTAL</label>
+              <input id="total" type="number" readonly>
+            </div>
+            <div class="field">
+              <label for="iva">IVA</label>
+              <input id="iva" type="number" readonly>
+            </div>
+            <div class="field">
+              <label for="irpf">IRPF</label>
+              <input id="irpf" type="number" min="0" step="0.01" inputmode="decimal">
+            </div>
+            <div class="field">
+              <label for="invoice-total">TOTAL FACTURA</label>
+              <input id="invoice-total" type="number" readonly>
+            </div>
+          </section>
+
+          <h3>GASTOS</h3>
+          <section class="data-box" aria-label="Gastos mensuales">
+            <div class="field">
+              <label for="expense-iva">IVA</label>
+              <input id="expense-iva" type="number" readonly>
+            </div>
+            <div class="field">
+              <label for="autonomos">AUTONOMOS</label>
+              <input id="autonomos" type="number" min="0" step="0.01" inputmode="decimal">
+            </div>
+            <div class="field">
+              <label for="expense-irpf">IRPF</label>
+              <input id="expense-irpf" type="number" readonly>
+            </div>
+            <div class="field">
+              <label for="gasoil1">GASOIL 1</label>
+              <input id="gasoil1" type="number" min="0" step="0.01" inputmode="decimal">
+            </div>
+            <div class="field">
+              <label for="gasoil2">GASOIL 2</label>
+              <input id="gasoil2" type="number" min="0" step="0.01" inputmode="decimal">
+            </div>
+            <div class="field">
+              <label for="gasoil3">GASOIL 3</label>
+              <input id="gasoil3" type="number" min="0" step="0.01" inputmode="decimal">
+            </div>
+            <div class="field">
+              <label for="gasoil4">GASOIL 4</label>
+              <input id="gasoil4" type="number" min="0" step="0.01" inputmode="decimal">
+            </div>
+            <div class="field">
+              <label for="expenses-total">GASTOS</label>
+              <input id="expenses-total" type="number" readonly>
+            </div>
+          </section>
+
+          <h3>INGRESOS</h3>
+          <section class="income-box" aria-label="Ingresos mensuales">
+            <span>INGRESOS</span>
+            <strong id="income-value">0,00 €</strong>
+          </section>
+        </div>
+      </section>
+
+      <section id="quarters-screen" class="screen" aria-labelledby="quarters-title">
+        <div class="topbar">
+          <button class="ghost-button" data-screen="menu-screen">Volver</button>
+        </div>
+        <div class="content">
+          <h2 id="quarters-title">Trimestral</h2>
+          <div id="quarters-grid" class="quarter-grid"></div>
+        </div>
+      </section>
+
+      <section id="quarter-detail-screen" class="screen" aria-labelledby="quarter-detail-title">
+        <div class="topbar">
+          <button class="ghost-button" data-screen="quarters-screen">Volver</button>
+        </div>
+        <div class="content">
+          <h2 id="quarter-detail-title">TRIMESTRE</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>MES</th>
+                  <th>TOTAL</th>
+                  <th>IVA</th>
+                  <th>TOTAL FACTURA</th>
+                  <th>GASTOS</th>
+                  <th>INGRESOS</th>
+                </tr>
+              </thead>
+              <tbody id="quarter-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>
