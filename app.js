@@ -105,11 +105,11 @@ function buildInvoiceForms() {
         ${invoiceField(index, "units", "UND.", false)}
         ${invoiceField(index, "price", "PRECIO AL DIA", false)}
         ${invoiceField(index, "otros", "OTROS", false)}
-        ${invoiceTextField(index, "otrosText", "DETALLE OTROS")}
+        ${invoiceTextField(index, "otrosText", "ESCRIBIR TEXTO")}
         ${invoiceField(index, "total", "TOTAL", true)}
         ${invoiceField(index, "iva", "IVA", true)}
         ${invoiceField(index, "aparte", "A PARTE", false)}
-        ${invoiceTextField(index, "aparteText", "DETALLE A PARTE")}
+        ${invoiceTextField(index, "aparteText", "ESCRIBIR TEXTO")}
         ${invoiceField(index, "irpf", "IRPF", false)}
         ${invoiceField(index, "invoiceTotal", "TOTAL DE LA FACTURA DE ASESORIA", true)}
         ${invoiceField(index, "invoiceTotalNoIrpf", "TOTAL FACTURA SIN IRPF", true)}
@@ -133,9 +133,9 @@ function invoiceField(index, key, label, readonly) {
 function invoiceTextField(index, key, label) {
   const id = invoiceInputId(index, key);
   return `
-    <div class="field">
+    <div class="field text-entry-field">
       <label for="${id}">${label}</label>
-      <input id="${id}" type="text">
+      <input id="${id}" class="text-entry-input" type="text" placeholder="${label}">
     </div>
   `;
 }

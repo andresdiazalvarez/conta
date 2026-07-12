@@ -264,6 +264,20 @@ input {
   font-weight: 700;
 }
 
+.text-entry-field label {
+  color: #8a1f1f;
+}
+
+.text-entry-input {
+  border-color: rgba(138, 31, 31, 0.35);
+  color: #8a1f1f;
+  background: #ffdede;
+}
+
+.text-entry-input::placeholder {
+  color: rgba(138, 31, 31, 0.78);
+}
+
 input[readonly] {
   background: #e6f4ff;
 }
