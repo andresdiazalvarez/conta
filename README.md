@@ -12,6 +12,9 @@ La app permite:
 - Cargar importes por meses desde `CARGAR FACTURAS`.
 - Calcular automaticamente `TOTAL`, `IVA`, `TOTAL FACTURA`, `GASTOS` e `INGRESOS`.
 - Consultar resumenes en `TRIMESTRAL`.
+- Imprimir los datos de la factura mensual abierta.
+- Descargar cada trimestre en CSV.
+- Descargar todo el ano en CSV.
 - Guardar los datos en el navegador con `localStorage`.
 
 ## Publicar en GitHub Pages

@@ -20,7 +20,10 @@
           <button class="ghost-button" data-screen="home-screen">Volver</button>
         </div>
         <div class="center-panel">
-          <h2 id="menu-title">Contabilidad</h2>
+          <div class="title-actions">
+            <h2 id="menu-title">Contabilidad</h2>
+            <button id="download-year" class="action-button" type="button">DESCARGAR ANO</button>
+          </div>
           <div class="button-stack">
             <button class="primary-button" data-screen="months-screen">CARGAR FACTURAS</button>
             <button class="primary-button" data-screen="quarters-screen">TRIMESTRAL</button>
@@ -43,7 +46,10 @@
           <button class="ghost-button" data-screen="months-screen">Volver</button>
         </div>
         <div class="content narrow">
-          <h2 id="invoice-title">FACTURA</h2>
+          <div class="title-actions">
+            <h2 id="invoice-title">FACTURA</h2>
+            <button id="print-invoice" class="action-button" type="button">IMPRIMIR</button>
+          </div>
           <p id="selected-month" class="month-label"></p>
 
           <section class="data-box" aria-label="Factura mensual">
