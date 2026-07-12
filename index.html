@@ -52,31 +52,11 @@
           </div>
           <p id="selected-month" class="month-label"></p>
 
-          <section class="data-box" aria-label="Factura mensual">
-            <div class="field">
-              <label for="units">UND.</label>
-              <input id="units" type="number" min="0" step="0.01" inputmode="decimal">
-            </div>
-            <div class="field">
-              <label for="price">PRECIO AL DIA</label>
-              <input id="price" type="number" min="0" step="0.01" inputmode="decimal">
-            </div>
-            <div class="field">
-              <label for="total">TOTAL</label>
-              <input id="total" type="number" readonly>
-            </div>
-            <div class="field">
-              <label for="iva">IVA</label>
-              <input id="iva" type="number" readonly>
-            </div>
-            <div class="field">
-              <label for="irpf">IRPF</label>
-              <input id="irpf" type="number" min="0" step="0.01" inputmode="decimal">
-            </div>
-            <div class="field">
-              <label for="invoice-total">TOTAL FACTURA</label>
-              <input id="invoice-total" type="number" readonly>
-            </div>
+          <div id="invoices-container" class="invoice-list"></div>
+
+          <section class="income-box totals-box" aria-label="Totales de facturas">
+            <span>TOTALES</span>
+            <strong id="all-invoices-total">0,00 €</strong>
           </section>
 
           <h3>GASTOS</h3>

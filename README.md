@@ -10,7 +10,8 @@ La app permite:
 
 - Entrar desde el boton `CONTABILIDAD`.
 - Cargar importes por meses desde `CARGAR FACTURAS`.
-- Calcular automaticamente `TOTAL`, `IVA`, `TOTAL FACTURA`, `GASTOS` e `INGRESOS`.
+- Rellenar hasta 4 facturas por mes.
+- Calcular automaticamente `TOTAL`, `IVA`, `TOTAL FACTURA`, `TOTALES`, `GASTOS` e `INGRESOS`.
 - Consultar resumenes en `TRIMESTRAL`.
 - Imprimir los datos de la factura mensual abierta.
 - Descargar cada trimestre en CSV.

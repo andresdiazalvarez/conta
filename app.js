@@ -1,6 +1,7 @@
 const STORAGE_KEY = "contabilidad-mensual";
 const IVA_RATE = 0.21;
 const DEFAULT_DAILY_PRICE = 72.85;
+const INVOICE_COUNT = 4;
 
 const months = [
   "ENERO",
@@ -24,8 +25,10 @@ const quarters = [
   ["OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
 ];
 
-const editableFields = ["units", "price", "irpf", "autonomos", "gasoil1", "gasoil2", "gasoil3", "gasoil4"];
-const calculatedFields = ["total", "iva", "invoice-total", "expense-iva", "expense-irpf", "expenses-total"];
+const invoiceEditableFields = ["units", "price", "otros", "irpf"];
+const invoiceCalculatedFields = ["total", "iva", "invoiceTotal"];
+const expenseEditableFields = ["autonomos", "gasoil1", "gasoil2", "gasoil3", "gasoil4"];
+const expenseCalculatedFields = ["expense-iva", "expense-irpf", "expenses-total"];
 let selectedMonth = months[0];
 let records = loadRecords();
 
@@ -43,6 +46,7 @@ document.getElementById("download-year").addEventListener("click", downloadYear)
 
 buildMonthButtons();
 buildQuarterButtons();
+buildInvoiceForms();
 bindInvoiceInputs();
 showScreen("home-screen");
 
@@ -85,35 +89,86 @@ function buildQuarterButtons() {
   });
 }
 
+function buildInvoiceForms() {
+  const container = document.getElementById("invoices-container");
+  container.innerHTML = "";
+
+  for (let index = 0; index < INVOICE_COUNT; index += 1) {
+    const section = document.createElement("section");
+    section.className = "invoice-box";
+    section.setAttribute("aria-label", `Factura ${index + 1}`);
+    section.innerHTML = `
+      <div class="invoice-heading">FACTURA ${index + 1}</div>
+      <div class="invoice-fields">
+        ${invoiceField(index, "units", "UND.", false)}
+        ${invoiceField(index, "price", "PRECIO AL DIA", false)}
+        ${invoiceField(index, "otros", "OTROS", false)}
+        ${invoiceField(index, "total", "TOTAL", true)}
+        ${invoiceField(index, "iva", "IVA", true)}
+        ${invoiceField(index, "irpf", "IRPF", false)}
+        ${invoiceField(index, "invoiceTotal", "TOTAL FACTURA", true)}
+      </div>
+    `;
+    container.appendChild(section);
+  }
+}
+
+function invoiceField(index, key, label, readonly) {
+  const id = invoiceInputId(index, key);
+  const readonlyAttribute = readonly ? " readonly" : "";
+  return `
+    <div class="field">
+      <label for="${id}">${label}</label>
+      <input id="${id}" type="number" min="0" step="0.01" inputmode="decimal"${readonlyAttribute}>
+    </div>
+  `;
+}
+
 function bindInvoiceInputs() {
-  editableFields.forEach((id) => {
+  for (let index = 0; index < INVOICE_COUNT; index += 1) {
+    invoiceEditableFields.forEach((field) => {
+      const input = document.getElementById(invoiceInputId(index, field));
+      input.value = "";
+      input.addEventListener("input", updateCurrentMonth);
+    });
+
+    invoiceCalculatedFields.forEach((field) => {
+      document.getElementById(invoiceInputId(index, field)).value = "0.00";
+    });
+  }
+
+  expenseEditableFields.forEach((id) => {
     const input = document.getElementById(id);
     input.value = "";
+    input.addEventListener("input", updateCurrentMonth);
   });
 
-  calculatedFields.forEach((id) => {
+  expenseCalculatedFields.forEach((id) => {
     document.getElementById(id).value = "0.00";
-  });
-
-  editableFields.forEach((id) => {
-    document.getElementById(id).addEventListener("input", () => {
-      updateCurrentMonth();
-    });
   });
 }
 
 function openMonth(month) {
   selectedMonth = month;
   document.getElementById("selected-month").textContent = month;
-  fillInvoiceForm(records[month] || defaultMonthRecord());
+  fillMonthForm(records[month] || defaultMonthRecord());
   updateCurrentMonth();
   showScreen("invoice-screen");
 }
 
-function fillInvoiceForm(record) {
-  editableFields.forEach((id) => {
-    const value = numberValue(record[id]);
-    document.getElementById(id).value = value === 0 ? "" : value.toFixed(2);
+function fillMonthForm(record) {
+  const normalized = normalizeRecord(record);
+  normalized.invoices.forEach((invoice, index) => {
+    invoiceEditableFields.forEach((field) => {
+      const value = numberValue(invoice[field]);
+      const input = document.getElementById(invoiceInputId(index, field));
+      input.value = shouldShowBlank(field, value) ? "" : value.toFixed(2);
+    });
+  });
+
+  expenseEditableFields.forEach((field) => {
+    const value = numberValue(normalized[field]);
+    document.getElementById(field).value = value === 0 ? "" : value.toFixed(2);
   });
 }
 
@@ -127,24 +182,41 @@ function updateCurrentMonth() {
 }
 
 function readEditableRecord() {
-  return editableFields.reduce((record, id) => {
-    record[id] = numberValue(document.getElementById(id).value);
-    return record;
-  }, {});
+  const invoices = [];
+
+  for (let index = 0; index < INVOICE_COUNT; index += 1) {
+    const invoice = {};
+    invoiceEditableFields.forEach((field) => {
+      invoice[field] = numberValue(document.getElementById(invoiceInputId(index, field)).value);
+    });
+    invoices.push(invoice);
+  }
+
+  return expenseEditableFields.reduce(
+    (record, field) => {
+      record[field] = numberValue(document.getElementById(field).value);
+      return record;
+    },
+    { invoices }
+  );
 }
 
 function calculateRecord(record) {
-  const total = record.units * record.price;
-  const iva = total * IVA_RATE;
-  const invoiceTotal = total + iva;
+  const invoices = normalizeInvoices(record.invoices).map(calculateInvoice);
+  const total = sum(invoices, "total");
+  const iva = sum(invoices, "iva");
+  const irpf = sum(invoices, "irpf");
+  const invoiceTotal = sum(invoices, "invoiceTotal");
   const expenseIva = iva;
-  const expenseIrpf = record.irpf;
-  const expensesTotal = expenseIva + record.autonomos + expenseIrpf + record.gasoil1 + record.gasoil2 + record.gasoil3 + record.gasoil4;
+  const expenseIrpf = irpf;
+  const expensesTotal = expenseIva + numberValue(record.autonomos) + expenseIrpf + numberValue(record.gasoil1) + numberValue(record.gasoil2) + numberValue(record.gasoil3) + numberValue(record.gasoil4);
   const income = invoiceTotal - expensesTotal;
 
   return {
+    invoices,
     total,
     iva,
+    irpf,
     "invoice-total": invoiceTotal,
     "expense-iva": expenseIva,
     "expense-irpf": expenseIrpf,
@@ -153,10 +225,37 @@ function calculateRecord(record) {
   };
 }
 
+function calculateInvoice(invoice) {
+  const units = numberValue(invoice.units);
+  const price = numberValue(invoice.price);
+  const otros = numberValue(invoice.otros);
+  const irpf = numberValue(invoice.irpf);
+  const total = units * price + otros;
+  const iva = total * IVA_RATE;
+  const invoiceTotal = total + iva;
+
+  return {
+    units,
+    price,
+    otros,
+    irpf,
+    total,
+    iva,
+    invoiceTotal
+  };
+}
+
 function renderCalculatedFields(record) {
-  calculatedFields.forEach((id) => {
-    document.getElementById(id).value = numberValue(record[id]).toFixed(2);
+  record.invoices.forEach((invoice, index) => {
+    invoiceCalculatedFields.forEach((field) => {
+      document.getElementById(invoiceInputId(index, field)).value = numberValue(invoice[field]).toFixed(2);
+    });
   });
+
+  document.getElementById("expense-iva").value = numberValue(record["expense-iva"]).toFixed(2);
+  document.getElementById("expense-irpf").value = numberValue(record["expense-irpf"]).toFixed(2);
+  document.getElementById("expenses-total").value = numberValue(record["expenses-total"]).toFixed(2);
+  document.getElementById("all-invoices-total").textContent = currency.format(numberValue(record["invoice-total"]));
   document.getElementById("income-value").textContent = currency.format(numberValue(record.income));
 }
 
@@ -174,8 +273,7 @@ function openQuarter(index, quarterMonths) {
   };
 
   quarterMonths.forEach((month) => {
-    const record = records[month] || emptyRecord();
-    const rowValues = getQuarterValues(record);
+    const rowValues = getQuarterValues(completeRecordFor(month));
     addQuarterRow(tbody, month, rowValues);
     sums.total += rowValues.total;
     sums.iva += rowValues.iva;
@@ -232,12 +330,10 @@ function downloadYear() {
   const rows = [
     [
       "MES",
-      "UND.",
-      "PRECIO AL DIA",
       "TOTAL",
       "IVA",
       "IRPF",
-      "TOTAL FACTURA",
+      "TOTALES",
       "AUTONOMOS",
       "GASOIL 1",
       "GASOIL 2",
@@ -249,8 +345,6 @@ function downloadYear() {
   ];
 
   const sums = {
-    units: 0,
-    price: 0,
     total: 0,
     iva: 0,
     irpf: 0,
@@ -268,8 +362,6 @@ function downloadYear() {
     const record = completeRecordFor(month);
     rows.push([
       month,
-      decimal(record.units),
-      decimal(record.price),
       decimal(record.total),
       decimal(record.iva),
       decimal(record.irpf),
@@ -283,8 +375,6 @@ function downloadYear() {
       decimal(record.income)
     ]);
 
-    sums.units += numberValue(record.units);
-    sums.price += numberValue(record.price);
     sums.total += numberValue(record.total);
     sums.iva += numberValue(record.iva);
     sums.irpf += numberValue(record.irpf);
@@ -300,8 +390,6 @@ function downloadYear() {
 
   rows.push([
     "SUMA",
-    decimal(sums.units),
-    decimal(sums.price),
     decimal(sums.total),
     decimal(sums.iva),
     decimal(sums.irpf),
@@ -358,8 +446,71 @@ function buildQuarterRows(quarterMonths) {
 }
 
 function completeRecordFor(month) {
-  const record = { ...emptyRecord(), ...(records[month] || {}) };
-  return { ...record, ...calculateRecord(record) };
+  return normalizeRecord(records[month] || defaultMonthRecord());
+}
+
+function normalizeRecord(record) {
+  const base = defaultMonthRecord();
+  const normalized = {
+    ...base,
+    ...record,
+    invoices: normalizeInvoices(record.invoices || oldSingleInvoice(record))
+  };
+  return { ...normalized, ...calculateRecord(normalized) };
+}
+
+function normalizeInvoices(invoices = []) {
+  const normalized = [];
+  for (let index = 0; index < INVOICE_COUNT; index += 1) {
+    normalized.push({
+      ...defaultInvoice(),
+      ...(invoices[index] || {})
+    });
+  }
+  return normalized;
+}
+
+function oldSingleInvoice(record) {
+  return [
+    {
+      units: numberValue(record.units),
+      price: numberValue(record.price) || DEFAULT_DAILY_PRICE,
+      otros: 0,
+      irpf: numberValue(record.irpf)
+    }
+  ];
+}
+
+function defaultMonthRecord() {
+  return {
+    invoices: Array.from({ length: INVOICE_COUNT }, defaultInvoice),
+    autonomos: 0,
+    gasoil1: 0,
+    gasoil2: 0,
+    gasoil3: 0,
+    gasoil4: 0
+  };
+}
+
+function defaultInvoice() {
+  return {
+    units: 0,
+    price: DEFAULT_DAILY_PRICE,
+    otros: 0,
+    irpf: 0
+  };
+}
+
+function invoiceInputId(index, field) {
+  return `invoice-${index}-${field}`;
+}
+
+function shouldShowBlank(field, value) {
+  return field !== "price" && value === 0;
+}
+
+function sum(items, key) {
+  return items.reduce((total, item) => total + numberValue(item[key]), 0);
 }
 
 function downloadCsv(filename, rows) {
@@ -385,20 +536,6 @@ function csvCell(value) {
 
 function decimal(value) {
   return numberValue(value).toFixed(2).replace(".", ",");
-}
-
-function emptyRecord() {
-  return editableFields.reduce((record, id) => {
-    record[id] = 0;
-    return record;
-  }, {});
-}
-
-function defaultMonthRecord() {
-  return {
-    ...emptyRecord(),
-    price: DEFAULT_DAILY_PRICE
-  };
 }
 
 function numberValue(value) {
